@@ -137,6 +137,10 @@ def get_jobs_from_db():
     except Exception as e:
         print("DB connection or query error:", e)
         return []
+    
+@app.route('/health', methods=['GET'])
+def health_check():
+    return 'OK', 200
 
 @app.route('/predict', methods=['POST'])
 def predict():

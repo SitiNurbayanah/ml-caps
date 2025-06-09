@@ -12,10 +12,11 @@ from nltk.tokenize import word_tokenize
 import os
 
 # Create NLTK data directory if it doesn't exist
-nltk_data_dir = os.path.expanduser('~/nltk_data')
-if not os.path.exists(nltk_data_dir):
-    os.makedirs(nltk_data_dir)
-nltk.data.path.append(nltk_data_dir)
+def create_nltk_data_dir():
+    nltk_data_dir = os.path.expanduser('~/nltk_data')
+    if not os.path.exists(nltk_data_dir):
+        os.makedirs(nltk_data_dir)
+    nltk.data.path.append(nltk_data_dir)
 
 def download_nltk_data():
     datasets = ['stopwords', 'punkt', 'wordnet', 'omw-1.4']
@@ -31,7 +32,8 @@ def download_nltk_data():
             except Exception as e:
                 print(f"Failed to download NLTK {dataset}: {e}")
 
-# Download NLTK data
+# Create NLTK data directory and download data
+create_nltk_data_dir()
 download_nltk_data()
 
 app = Flask(__name__)
@@ -84,14 +86,15 @@ def preprocess_text(text):
     text = re.sub(r'\s+', ' ', text).strip()
     try:
         tokens = word_tokenize(text)
-    except:
+    except Exception as e:
+        print(f"Tokenization error: {e}")
         tokens = text.split()
     tokens = [w for w in tokens if w not in stop_words and len(w) > 1]
     if lemmatizer:
         try:
             tokens = [lemmatizer.lemmatize(w) for w in tokens]
-        except:
-            pass
+        except Exception as e:
+            print(f"Lemmatization error: {e}")
     return " ".join(tokens)
 
 def extract_text_from_pdf(file_stream):
@@ -107,33 +110,31 @@ def extract_text_from_pdf(file_stream):
 
 def get_jobs_from_db():
     try:
-        conn = psycopg2.connect(
+        with psycopg2.connect(
             host=DB_HOST,
             port=DB_PORT,
             dbname=DB_NAME,
             user=DB_USER,
             password=DB_PASSWORD
-        )
-        cur = conn.cursor()
-        query = f"""
-        SELECT id_lowongan, posisi, tentang, syarat, skill
-        FROM {DB_SCHEMA}.lowongan
-        WHERE tentang IS NOT NULL
-        LIMIT 500
-        """
-        cur.execute(query)
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
-        jobs = []
-        for row in rows:
-            job_id = row[0]
-            job_title = row[1]
-            combined_text_raw = " ".join(str(col) for col in row[2:] if col)
-            clean_text = preprocess_text(combined_text_raw)
-            jobs.append({"id_lowongan": job_id, "Job Title": job_title, "clean_text": clean_text})
-        print(f"Successfully loaded {len(jobs)} jobs from database")
-        return jobs
+        ) as conn:
+            with conn.cursor() as cur:
+                query = f"""
+                SELECT id_lowongan, posisi, tentang, syarat, skill
+                FROM {DB_SCHEMA}.lowongan
+                WHERE tentang IS NOT NULL
+                LIMIT 500
+                """
+                cur.execute(query)
+                rows = cur.fetchall()
+                jobs = []
+                for row in rows:
+                    job_id = row[0]
+                    job_title = row[1]
+                    combined_text_raw = " ".join(str(col) for col in row[2:] if col)
+                    clean_text = preprocess_text(combined_text_raw)
+                    jobs.append({"id_lowongan": job_id, "Job Title": job_title, "clean_text": clean_text})
+                print(f"Successfully loaded {len(jobs)} jobs from database")
+                return jobs
     except Exception as e:
         print("DB connection or query error:", e)
         return []

@@ -6,6 +6,7 @@ import pickle
 import psycopg2  # Use psycopg2-binary for PostgreSQL connection
 import tensorflow as tf
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # Import CORS
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
@@ -37,6 +38,24 @@ create_nltk_data_dir()
 download_nltk_data()
 
 app = Flask(__name__)
+
+# Enable CORS for all routes
+CORS(app, resources={
+    r"/*": {
+        "origins": ["*"],  # Allow all origins in development
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
+
+# Alternative: More specific CORS configuration
+# CORS(app, resources={
+#     r"/predict": {
+#         "origins": ["http://localhost:5173", "http://192.168.100.98:5173"],
+#         "methods": ["POST"],
+#         "allow_headers": ["Content-Type"]
+#     }
+# })
 
 # DB config
 PGHOST = 'ep-plain-voice-a1448kji-pooler.ap-southeast-1.aws.neon.tech'

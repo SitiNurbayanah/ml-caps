@@ -39,12 +39,10 @@ download_nltk_data()
 app = Flask(__name__)
 
 # DB config
-DB_HOST = "w5ejy.h.filess.io"
-DB_PORT = 5434
-DB_NAME = "CapstoneML_askrequire"
-DB_USER = "CapstoneML_askrequire"
-DB_PASSWORD = "4212b39e981348968d21a833646f0f70cba2bbf6"
-DB_SCHEMA = "job_portal"
+PGHOST = 'ep-plain-voice-a1448kji-pooler.ap-southeast-1.aws.neon.tech'
+PGDATABASE = 'neondb'
+PGUSER = 'neondb_owner'
+PGPASSWORD = 'npg_9oxOgKj3CtSU'
 
 # Variables
 model = None
@@ -111,16 +109,15 @@ def extract_text_from_pdf(file_stream):
 def get_jobs_from_db():
     try:
         with psycopg2.connect(
-            host=DB_HOST,
-            port=DB_PORT,
-            dbname=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD
+            host=PGHOST,
+            dbname=PGDATABASE,
+            user=PGUSER,
+            password=PGPASSWORD
         ) as conn:
             with conn.cursor() as cur:
-                query = f"""
+                query = """
                 SELECT id_lowongan, posisi, tentang, syarat, skill
-                FROM {DB_SCHEMA}.lowongan
+                FROM lowongan
                 WHERE tentang IS NOT NULL
                 LIMIT 500
                 """
